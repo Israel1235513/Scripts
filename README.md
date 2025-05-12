@@ -1,4 +1,3 @@
 # Scripts
 
-> Munching Simulator
-> Bye! :D
+# > Munching Simulator
