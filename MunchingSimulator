@@ -1,4 +1,4 @@
--- Variáveis
+-- Variáveis 
 local ZenLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/Israel1235513/ZenLib/refs/heads/main/Source')))()
 local Players = game.Players
 local LocalPlayer = Players.LocalPlayer
