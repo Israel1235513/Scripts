@@ -1,0 +1,109 @@
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local MarketplaceService = game:GetService("MarketplaceService")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local executor = (identifyexecutor and identifyexecutor()) or (getexecutorname and getexecutorname()) or ""
+local Executor = executor .. " Executor"
+local placeId = game.PlaceId
+local supportedGames = {
+    [3859039810] = "loadstring(game:HttpGet('https://raw.githubusercontent.com/Israel1235513/Scripts/refs/heads/main/MunchingSimulator'))",
+}
+local gameName = (pcall(function() return MarketplaceService:GetProductInfo(placeId) end) and gameInfo.Name) or "Desconhecido"
+local isSupported = supportedGames[placeId] ~= nil
+
+local screenGui = Instance.new("ScreenGui", playerGui)
+screenGui.Name = "ZenitsuLoader"
+screenGui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", screenGui)
+frame.Size = UDim2.new(0, 400, 0, 250)
+frame.Position = UDim2.new(0.5, -200, 0.5, -125)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.BorderSizePixel = 0
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+
+local image = Instance.new("ImageLabel", frame)
+image.Size = UDim2.new(0, 100, 0, 100)
+image.Position = UDim2.new(0.5, -50, 0, 10)
+image.BackgroundTransparency = 1
+image.Image = "rbxassetid://10723345749"
+
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Position = UDim2.new(0, 0, 0, 120)
+title.BackgroundTransparency = 1
+title.Text = "Iniciando..."
+title.TextColor3 = Color3.fromRGB(255, 140, 0)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 22
+
+local statusText = Instance.new("TextLabel", frame)
+statusText.Size = UDim2.new(1, 0, 0, 25)
+statusText.Position = UDim2.new(0, 0, 0, 155)
+statusText.BackgroundTransparency = 1
+statusText.Text = "Verificando o Executor..."
+statusText.TextColor3 = Color3.fromRGB(180, 180, 180)
+statusText.Font = Enum.Font.Gotham
+statusText.TextSize = 18
+
+local progressBarBG = Instance.new("Frame", frame)
+progressBarBG.Size = UDim2.new(0.8, 0, 0, 20)
+progressBarBG.Position = UDim2.new(0.1, 0, 0, 190)
+progressBarBG.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+progressBarBG.BorderSizePixel = 0
+Instance.new("UICorner", progressBarBG).CornerRadius = UDim.new(0, 6)
+
+local progressBar = Instance.new("Frame", progressBarBG)
+progressBar.Size = UDim2.new(0, 0, 1, 0)
+progressBar.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
+progressBar.BorderSizePixel = 0
+Instance.new("UICorner", progressBar).CornerRadius = UDim.new(0, 6)
+
+local function fillProgress(duration)
+    local tween = TweenService:Create(progressBar, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
+        Size = UDim2.new(1, 0, 1, 0)
+    })
+    tween:Play()
+    tween.Completed:Wait()
+end
+
+coroutine.wrap(function()
+    wait(1)
+    statusText.Text = "Verificando o Executor..."
+    fillProgress(1.5)
+
+    wait(1.5)
+    statusText.Text = "Executor Detectado: " .. Executor
+    progressBar.Size = UDim2.new(0, 0, 1, 0)
+    fillProgress(1.5)
+
+    wait(1.2)
+    statusText.Text = "Verificando Jogo..."
+    progressBar.Size = UDim2.new(0, 0, 1, 0)
+    fillProgress(1.5)
+
+    wait(1)
+    if not isSupported then
+        statusText.Text = "Jogo não suportado: " .. gameName
+        title.Text = "Falha"
+        progressBar.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+        fillProgress(2)
+        wait(3)
+        screenGui:Destroy()
+        return
+    end
+
+    statusText.Text = "Jogo suportado: " .. gameName
+    fillProgress(1.5)
+
+    wait(1)
+    statusText.Text = "Iniciando Zenitsu Hub..."
+    title.Text = "Zenitsu Hub"
+    fillProgress(1)
+
+    wait(2)
+    loadstring(supportedGames[placeId])()
+    screenGui:Destroy()
+end)()
