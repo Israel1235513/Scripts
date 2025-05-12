@@ -1,0 +1,150 @@
+-- Variáveis
+local redzLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/tbao143/Library-ui/refs/heads/main/Redzhubui"))()
+local Players = game.Players
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character
+local Humanoid = Character.Humanoid
+local executor = (identifyexecutor and identifyexecutor()) or (getexecutorname and getexecutorname()) or ""
+print(executor .. " Executor")
+
+local GameInformations = {
+    GameId = game.PlaceId,
+    GameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+}
+
+
+-- Valores
+_G.farmMoney = false
+_G.metabolismSelected = ""
+_G.foodSelected = ""
+_G.seasoningSelected = ""
+_G.rankSelected = ""
+
+-- Funções
+local function TeleportToPosition(position)
+    if Character then
+        Character.HumanoidRootPart.CFrame = position
+    end
+end
+
+function farmMoney(v)
+	while _G.farmMoney == true do
+		TeleportToPosition(CFrame.new(1280.4208984375, 35.00733184814453, 1217.659912109375))
+		wait(4.5)
+	end
+end
+
+-- Configurações do UI
+redzLib:SetScale(600)
+
+-- Window
+local Window = redzLib:MakeWindow({ Title = GameInformations.GameName, SubTitle = "by zenitsumodz", SaveFolder = "zenitsuhub" })
+
+-- Dialogos
+
+local BemVindo = Window:Dialog({
+	Title = "Zenitsu Hub",
+    Text = "Jogo: " .. GameInformations.GameName .. " \nExecutor: " .. executor .. " Executor",
+	Options = {
+		""
+	}
+})
+
+-- Minimize Button
+Window:AddMinimizeButton({Button = { Image = "rbxassetid://71014873973869", BackgroundTransparency = 0, Size = UDim2.new(0, 80, 0, 80), Position = UDim2.new(0, 10, 0, 10) }, Corner = { CornerRadius = UDim.new(0.1, 0) }})
+
+-- Tabs
+local Main = Window:MakeTab({"Main", "shield"})
+local Shop = Window:MakeTab({"Shop", "shop"})
+local Skins = Window:MakeTab({"Skins", "eye"})
+local Money = Window:MakeTab({"Money", "coins"})
+local Misc = Window:MakeTab({"Misc", "send"})
+local Credits = Window:MakeTab({"Credits", "newspaper"})
+
+-- Sections
+
+-- Sliders
+
+-- Toggles
+Money:AddToggle({
+    Name = "Farm Money",
+    Default = false,
+    Callback = function(v)
+		_G.farmMoney = v
+		farmMoney(v)
+    end
+})
+
+-- Dropdowns
+local FoodShop = Shop:AddDropdown({
+  Name = "Foods",
+  Description = "Select the food to purchase.",
+  Options = {"Bacon", "Pizza", "Watermelon", "Hotdog", "Pie", "Cookie", "Pancakes", "Donut", "Ice Cream", "Sugar Cookie", "Turkey Leg", "Cake", "Burger"},
+  Default = "Bacon",
+  Callback = function(Value)
+	_G.foodSelected = Value
+  end
+})
+
+local MetabolismShop = Shop:AddDropdown({
+  Name = "Metabolism",
+  Description = "Select the metabolism to purchase.",
+  Options = {"Slender", "Skinny", "Average", "Pudgy", "Big", "Fat", "Chunky", "Hefty", "Muffin Top", "Huge", "Giant", "Massive", "Enormous", "Toxic", "Colossal"},
+  Default = "Slender",
+  Callback = function(Value)
+	_G.metabolismSelected = Value
+  end
+})
+
+local SeasoningShop = Shop:AddDropdown({
+  Name = "Seasoning",
+  Description = "Select the seasoning to purchase.",
+  Options = {"None", "Spicy", "Glitter", "Fire", "Ice", "Eletric", "Crystal", "Golden", "Radioactive", "Galaxy", "Alien", "MLG", "Rainbow", "Diamond", "Void"},
+  Default = "None",
+  Callback = function(Value)
+	_G.seasoningSelected = Value
+  end
+})
+
+local RanksShop = Shop:AddDropdown({
+  Name = "Ranks",
+  Description = "Select the ranks to purchase.",
+  Options = {"Stick Figure", "Picky Eater", "Taste Tester", "Hungry Man", "Full Belly", "Food Lover", "Competitive Eater", "Cuisine Connoisseur", "Radioactive", "Munching Master"},
+  Default = "Stick Figure",
+  Callback = function(Value)
+	_G.rankSelected = Value
+  end
+})
+
+-- Buttons
+Money:AddButton({"Teleport to Money Cavern", function(Value)
+	TeleportToPosition(CFrame.new(1280.4208984375, 35.00733184814453, 1217.659912109375))
+end})
+
+Shop:AddButton({"Purchase Food", function(Value)
+	game:GetService('ReplicatedStorage').Events.Player.Buy:FireServer("Food", _G.foodSelected)
+end})
+
+Shop:AddButton({"Purchase Metabolism", function(Value)
+	game:GetService('ReplicatedStorage').Events.Player.Buy:FireServer("Metabolism", _G.metabolismSelected)
+end})
+
+Shop:AddButton({"Purchase Seasoning", function(Value)
+	game:GetService('ReplicatedStorage').Events.Player.Buy:FireServer("Seasoning", _G.seasoningSelected)
+end})
+
+Shop:AddButton({"Purchase Rank", function(Value)
+	game:GetService('ReplicatedStorage').Events.Player.Buy:FireServer("Rank", _G.rankSelected)
+end})
+
+-- Paragraphs
+
+local ShopRankParagraph = Shop:AddParagraph({"Requerimentos para obter o Rank", "Precisa ter o antigo Rank e dinheiro."})
+
+-- Discord Invite
+Credits:AddDiscordInvite({
+    Name = "Name Hub",
+    Description = "Join server",
+    Logo = "rbxassetid://18751483361",
+    Invite = "Link discord invite",
+})
