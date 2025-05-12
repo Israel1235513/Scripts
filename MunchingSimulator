@@ -1,5 +1,5 @@
 -- Variáveis
-local redzLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/tbao143/Library-ui/refs/heads/main/Redzhubui"))()
+local ZenLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/Israel1235513/ZenLib/refs/heads/main/Source')))()
 local Players = game.Players
 local LocalPlayer = Players.LocalPlayer
 local Character = LocalPlayer.Character
@@ -35,10 +35,10 @@ function farmMoney(v)
 end
 
 -- Configurações do UI
-redzLib:SetScale(600)
+ZenLib:SetScale(600)
 
 -- Window
-local Window = redzLib:MakeWindow({ Title = GameInformations.GameName, SubTitle = "by zenitsumodz", SaveFolder = "zenitsuhub" })
+local Window = ZenLib:MakeWindow({ Title = GameInformations.GameName, SubTitle = "by zenitsumodz", SaveFolder = "zenitsuhub" })
 
 -- Dialogos
 
