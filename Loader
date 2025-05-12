@@ -10,7 +10,8 @@ local placeId = game.PlaceId
 local supportedGames = {
     [3859039810] = "loadstring(game:HttpGet('https://raw.githubusercontent.com/Israel1235513/Scripts/refs/heads/main/MunchingSimulator'))",
 }
-local gameName = (pcall(function() return MarketplaceService:GetProductInfo(placeId) end) and gameInfo.Name) or "Desconhecido"
+local success, gameInfo = pcall(function() return MarketplaceService:GetProductInfo(placeId) end)
+local gameName = (success and gameInfo and gameInfo.Name) or "Desconhecido"
 local isSupported = supportedGames[placeId] ~= nil
 
 local screenGui = Instance.new("ScreenGui", playerGui)
@@ -57,7 +58,7 @@ Instance.new("UICorner", progressBarBG).CornerRadius = UDim.new(0, 6)
 
 local progressBar = Instance.new("Frame", progressBarBG)
 progressBar.Size = UDim2.new(0, 0, 1, 0)
-progressBar.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
+progressBar.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
 progressBar.BorderSizePixel = 0
 Instance.new("UICorner", progressBar).CornerRadius = UDim.new(0, 6)
 
