@@ -1,0 +1,379 @@
+
+-- Variáveis 
+local ZenLib = loadstring(game:HttpGet(('https://pastebin.com/raw/kbcW4961')))()
+local Players = game.Players
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RS = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local Humanoid = Character.Humanoid
+local RunService = game:GetService("RunService")
+local task = task
+local executor = (identifyexecutor and identifyexecutor()) or (getexecutorname and getexecutorname()) or ""
+print(executor .. " Executor")
+
+local GameInformations = {
+    GameId = game.PlaceId,
+    GameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+}
+
+
+-- Valores
+local Wall = game.Workspace:FindFirstChild("Map"):FindFirstChild("Tunnel"):FindFirstChild("Wall")
+local LifeBricks = game.Workspace:FindFirstChild("Lifebricks")
+local Door = nil
+local currentFarmLoop = nil 
+local SelectedItemName = "" 
+local SelectedPetName = "" 
+local SelectedTrailName = ""
+local BuyItemRemote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("BuyItem")
+local EquipItemRemote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("EquipItem")
+local ShopItemsFolder = ReplicatedStorage:FindFirstChild("Shop") and ReplicatedStorage.Shop:FindFirstChild("Items")
+local ShopItemsFolder = ReplicatedStorage:FindFirstChild("Shop") and ReplicatedStorage.Shop:FindFirstChild("Trails")
+local ShopItemsFolder = ReplicatedStorage:FindFirstChild("Shop") and ReplicatedStorage.Shop:FindFirstChild("Pets")
+local targetButton = game:GetService("Workspace").Map.NeonPartsTunnel:FindFirstChild("1Ins").Button
+local tweenInfo = TweenInfo.new(0.001, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
+local originalPosition = targetButton.Position
+
+-- Funções
+
+local function getCharacter()
+    LocalPlayer.Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    return LocalPlayer.Character
+end
+
+local currentCharacter = getCharacter()
+
+local function updateCharacterAndClick()
+    if not currentCharacter or not currentCharacter:FindFirstChild("HumanoidRootPart") then 
+        currentCharacter = getCharacter()
+    end
+    
+    local rootPart = currentCharacter:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+    
+    local playerPosition = rootPart.Position
+    
+    targetButton.Transparency = 1
+    targetButton.CanCollide = false
+    targetButton.Position = playerPosition
+    
+    local tween = TweenService:Create(targetButton, tweenInfo, {Position = originalPosition})
+    tween:Play()
+    
+    tween.Completed:Wait() 
+    
+    targetButton.Transparency = 0
+    targetButton.CanCollide = true 
+end
+
+
+function getRoot(char)
+	local rootPart = char:FindFirstChild('HumanoidRootPart') or char:FindFirstChild('Torso') or char:FindFirstChild('UpperTorso')
+	return rootPart
+end
+
+local function getItemNames(folderName)
+    local folderPath = ReplicatedStorage:FindFirstChild("Shop") and ReplicatedStorage.Shop:FindFirstChild(folderName)
+    local names = {}
+    
+    if folderPath then
+        for _, item in ipairs(folderPath:GetChildren()) do
+            table.insert(names, item.Name)
+        end
+    else
+        warn("Pasta de itens '" .. folderName .. "' não encontrada!")
+    end
+    return names
+end
+
+local function TeleportToPosition(position)
+	local char = LocalPlayer.Character
+	if char and getRoot(char) then
+		getRoot(char).CFrame = CFrame.new(position)
+	end
+end
+
+
+local function NoclipLoop()
+    local character = LocalPlayer.Character
+    if not character then return end
+    for _, child in pairs(character:GetDescendants()) do
+        if child:IsA("BasePart") and child.CanCollide == true then
+            child.CanCollide = false
+        end
+    end
+end
+
+-- Configurações do UI
+ZenLib:SetScale(600)
+
+-- Window
+local Window = ZenLib:MakeWindow({ Title = GameInformations.GameName, SubTitle = "by zenitsumodz", SaveFolder = "zenitsuhub" })
+
+-- Dialogos
+
+local BemVindo = Window:Dialog({
+	Title = "Zenitsu Hub",
+    Text = GameInformations.GameName .. " \nExecutor: " .. executor .. " Executor",
+	Options = {
+		""
+	}
+})
+
+-- Minimize Button
+Window:AddMinimizeButton({Button = { Image = "rbxassetid://10723345749", BackgroundTransparency = 0, Size = UDim2.new(0, 80, 0, 80), Position = UDim2.new(0, 10, 0, 10) }, Corner = { CornerRadius = UDim.new(0.1, 0) }})
+
+-- Tabs
+local Main = Window:MakeTab({"Main", "sheet"})
+local Farm = Window:MakeTab({"Farm", "coin"})
+local Items = Window:MakeTab({"Items", "box"})
+
+-- FARM
+Farm:AddToggle({
+    Name = "Dont die for Wall",
+    Default = false,
+    Callback = function(v)
+        local collisionState = not v 
+        
+        local wall = game.Workspace.Map.Tunnel.Wall
+        local face = wall:FindFirstChild("Face")
+
+        if wall and face then
+            wall.CanTouch = collisionState
+            wall.CanCollide = collisionState
+            wall.CanQuery = collisionState
+            
+            face.CanTouch = collisionState
+            face.CanCollide = collisionState
+            face.CanQuery = collisionState
+        else
+            warn("Partes Wall ou Face não encontradas!")
+        end
+    end
+})
+
+Farm:AddButton({"Destroy Wall", function()
+    Wall:Destroy()
+end})
+
+Farm:AddButton({"Reset", function()
+    Character:BreakJoints()
+end})
+
+Farm:AddToggle({
+    Name = "Auto Farm",
+    Default = false,
+    Callback = function(v)
+        if currentFarmLoop then
+            task.cancel(currentFarmLoop)
+            currentFarmLoop = nil
+        end
+        
+        if v then
+            currentFarmLoop = task.spawn(function()
+                local lifeBricksParent = game.Workspace:FindFirstChild("Lifebricks")
+                
+                if not lifeBricksParent then 
+                    warn("Lifebricks parent não encontrado!")
+                    return 
+                end
+                
+                while true do 
+                    
+                    local foundAllParts = true
+                    for i = 1, 8 do
+                        local partName = tostring(i)
+                        local targetPart = lifeBricksParent:FindFirstChild(partName)
+
+                        if targetPart and targetPart:IsA("BasePart") then
+                            TeleportToPosition(targetPart.CFrame.Position)
+                            task.wait(0.5)
+                        else
+                            warn("Part '" .. partName .. "' não encontrada. Reiniciando ciclo.")
+                            foundAllParts = false
+                            break 
+                        end
+                    end
+
+                    local char = LocalPlayer.Character
+                    local humanoid = char and char:FindFirstChildOfClass('Humanoid')
+                    
+                    if humanoid and humanoid.Health > 0 then
+                        humanoid.Health = 0 
+                    end
+                    task.wait(5) 
+                    if foundAllParts then
+                        task.wait(0.1)
+                    end
+                end
+            end)
+        end
+    end
+})
+-- MAIN
+Main:AddToggle({
+    Name = "Noclip",
+    Default = false,
+    Callback = function(v)
+        if v == true then
+            if not Noclipping then
+                Noclipping = RunService.Stepped:Connect(NoclipLoop)
+            end
+        else
+            if Noclipping then
+                Noclipping:Disconnect()
+                Noclipping = nil
+                
+                local character = LocalPlayer.Character
+                if character then
+                    for _, child in pairs(character:GetDescendants()) do
+                        if child:IsA("BasePart") then
+                            child.CanCollide = true
+                        end
+                    end
+                end
+            end
+        end
+    end
+})
+Main:AddButton({"Fly Gui V3", function(Value)
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
+end})
+
+Main:AddButton({"Rejoin", function(Value)
+	game:GetService("TeleportService"):Teleport(game.PlaceId, game:GetService("Players").LocalPlayer)
+end})
+
+Main:AddButton({"Activate Button", function()
+    updateCharacterAndClick()
+end})
+
+Main:AddSlider({
+  Name = "Speed",
+  Min = 1,
+  Max = 255,
+  Increase = 1,
+  Default = 16,
+  Callback = function(Value)
+		Humanoid.WalkSpeed = Value
+  end
+})
+
+Main:AddSlider({
+  Name = "JumpPower",
+  Min = 46,
+  Max = 255,
+  Increase = 1,
+  Default = Humanoid.JumpPower,
+  Callback = function(Value)
+		if LocalPlayer.Character:FindFirstChildOfClass('Humanoid').UseJumpPower then
+			LocalPlayer.Character:FindFirstChildOfClass('Humanoid').JumpPower = Value
+		else
+			LocalPlayer.Character:FindFirstChildOfClass('Humanoid').JumpHeight  = Value
+		end
+  end
+})
+
+-- ITEMS
+local itemOptions = getItemNames("Items")
+local petOptions = getItemNames("Pets")
+local trailOptions = getItemNames("Trails")
+
+Items:AddDropdown({
+    Name = "Item",
+    Description = "Select the item to buy.",
+    Options = itemOptions, 
+    Flag = "dropdown teste",
+    Callback = function(Value)
+        SelectedItemName = Value
+    end
+})
+
+Items:AddButton({"Buy item", function()
+    if not BuyItemRemote then
+        warn("Remote 'BuyItem' (RS.Remotes.BuyItem) não encontrado!")
+        return
+    end
+
+    if not SelectedItemName or SelectedItemName == "" then
+        warn("Nenhum item selecionado para compra. Selecione no Dropdown 'Item'.")
+        return
+    end
+
+    BuyItemRemote:FireServer(SelectedItemName)
+    print("Tentativa de compra do item: " .. SelectedItemName)
+end})
+
+Items:AddButton({"Equip Item", function()
+    if not EquipItemRemote then
+        warn("Remote 'EquipItem' não encontrado!")
+        return
+    end
+
+    if not SelectedItemName or SelectedItemName == "" then
+        warn("Nenhum item selecionado para equipar.")
+        return
+    end
+
+    EquipItemRemote:FireServer(SelectedItemName)
+    print("Tentativa de equipar o item: " .. SelectedItemName)
+end})
+
+
+Items:AddDropdown({
+    Name = "Pets",
+    Description = "Select the pet",
+    Options = petOptions, 
+    Default = petOptions[1], 
+    Flag = "dropdown teste",
+    Callback = function(Value)
+        SelectedPetName = Value
+    end
+})
+
+Items:AddButton({"Buy Pet", function()
+    if BuyItemRemote and SelectedPetName ~= "" then
+        BuyItemRemote:FireServer(SelectedPetName)
+        print("Tentativa de compra do Pet: " .. SelectedPetName)
+    else
+        warn("Falha ao comprar Pet (Remote ou Pet não selecionado).")
+    end
+end})
+
+Items:AddButton({"Equip Pet", function()
+    if EquipItemRemote and SelectedPetName ~= "" then
+        EquipItemRemote:FireServer(SelectedPetName)
+        print("Tentativa de equipar o Pet: " .. SelectedPetName)
+    else
+        warn("Falha ao equipar Pet (Remote ou Pet não selecionado).")
+    end
+end})
+
+Items:AddDropdown({
+    Name = "Trails",
+    Description = "Select the trail",
+    Options = trailOptions, 
+    Default = trailOptions[1], 
+    Flag = "dropdown teste",
+    Callback = function(Value)
+        SelectedTrailName = Value
+    end
+})
+Items:AddButton({"Buy Trail", function()
+    if BuyItemRemote and SelectedTrailName ~= "" then
+        BuyItemRemote:FireServer(SelectedTrailName)
+        print("Tentativa de compra do Trail: " .. SelectedTrailName)
+    else
+        warn("Falha ao comprar Trail (Remote ou Trail não selecionado).")
+    end
+end})
+Items:AddButton({"Equip Trail", function()
+    if EquipItemRemote and SelectedTrailName ~= "" then
+        EquipItemRemote:FireServer(SelectedTrailName)
+        print("Tentativa de equipar o Trail: " .. SelectedTrailName)
+    else
+        warn("Falha ao equipar Trail (Remote ou Trail não selecionado).")
+    end
+end})
