@@ -1,0 +1,278 @@
+-- Variáveis 
+local ZenLib = loadstring(game:HttpGet(('https://pastebin.com/raw/kbcW4961')))()
+local Players = game.Players
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RS = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local Humanoid = Character.Humanoid
+local RunService = game:GetService("RunService")
+local Backpack = LocalPlayer:FindFirstChild("Backpack") 
+local Camera = workspace.CurrentCamera
+local task = task
+local executor = (identifyexecutor and identifyexecutor()) or (getexecutorname and getexecutorname()) or ""
+print(executor .. " Executor")
+
+local GameInformations = {
+    GameId = game.PlaceId,
+    GameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+}
+
+
+-- Valores
+local SelectedLuckyBlock = nil
+local Items = Backpack:GetChildren()
+local ItemCounts = {} 
+local ItemsToKeep = {}
+local ItemsToDelete = {} 
+local AutoGiveActive = false
+local HitboxRange = 3
+local PlayerAddedConnection = nil 
+local HitboxActivate = false
+
+
+-- Funções
+function getRoot(char)
+	local rootPart = char:FindFirstChild('HumanoidRootPart') or char:FindFirstChild('Torso') or char:FindFirstChild('UpperTorso')
+	return rootPart
+end
+
+local function TeleportToPosition(position)
+	local char = LocalPlayer.Character
+	if char and getRoot(char) then
+		getRoot(char).CFrame = CFrame.new(position)
+	end
+end
+
+
+local function NoclipLoop()
+    local character = LocalPlayer.Character
+    if not character then return end
+    for _, child in pairs(character:GetDescendants()) do
+        if child:IsA("BasePart") and child.CanCollide == true then
+            child.CanCollide = false
+        end
+    end
+end
+
+local function ApplyHitbox(Character)
+    if Character.Parent == LocalPlayer then 
+        return 
+    end
+    if not HitboxActivate then return end 
+
+    local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
+    
+    if HumanoidRootPart then
+        local NewSize = Vector3.new(HitboxRange, HitboxRange, HitboxRange) 
+        HumanoidRootPart.Size = NewSize
+        HumanoidRootPart.CanCollide = false
+        HumanoidRootPart.Position = HumanoidRootPart.Position + Vector3.new(0, HitboxRange / 2, 0)
+    end
+end
+
+local function PlayerSetup(Player)
+    if Player ~= LocalPlayer then
+        Player.CharacterAdded:Connect(ApplyHitbox)
+        if Player.Character then
+            ApplyHitbox(Player.Character)
+        end
+    end
+end
+
+-- Configurações do UI
+ZenLib:SetScale(600)
+
+-- Window
+local Window = ZenLib:MakeWindow({ Title = GameInformations.GameName, SubTitle = "by zenitsumodz", SaveFolder = "zenitsuhub" })
+
+-- Dialogos
+
+local BemVindo = Window:Dialog({
+	Title = "Zenitsu Hub",
+    Text = GameInformations.GameName .. " \nExecutor: " .. executor .. " Executor",
+	Options = {
+		""
+	}
+})
+
+-- Minimize Button
+Window:AddMinimizeButton({Button = { Image = "rbxassetid://10723345749", BackgroundTransparency = 0, Size = UDim2.new(0, 80, 0, 80), Position = UDim2.new(0, 10, 0, 10) }, Corner = { CornerRadius = UDim.new(0.1, 0) }})
+
+-- Tabs
+local Main = Window:MakeTab({"Main", "sheet"})
+local Lucky = Window:MakeTab({"Lucky Blocks", "coin"})
+local Inventory = Window:MakeTab({"Inventory", "box"})
+local Combat = Window:MakeTab({"Combat", "sword"})
+
+-- Lucky Blocks
+Lucky:AddDropdown({
+  Name = "Select the Lucky Block",
+  Description = "Select the <font color='rgb(88, 101, 242)'>Lucky Block</font>",
+  Options = {"Lucky Block Normal", "Lucky Block Super", "Lucky Block Diamond", "Lucky Block Rainbow", "Lucky Block Galaxy"},
+  Default = "Lucky Block Normal",
+  Flag = "dropdown teste",
+  Callback = function(Value)
+        SelectedLuckyBlock = Value
+  end
+})
+
+Lucky:AddButton({"Give Lucky Block", function(Value)
+    if SelectedLuckyBlock == "Lucky Block Normal" then
+        RS.SpawnLuckyBlock:FireServer()
+    elseif SelectedLuckyBlock == "Lucky Block Super" then
+        RS.SpawnSuperBlock:FireServer()
+    elseif SelectedLuckyBlock == "Lucky Block Diamond" then
+        RS.SpawnDiamondBlock:FireServer()
+    elseif SelectedLuckyBlock == "Lucky Block Rainbow" then
+        RS.SpawnRainbowBlock:FireServer()
+    elseif SelectedLuckyBlock == "Lucky Block Galaxy" then
+        RS.SpawnGalaxyBlock:FireServer()
+    end
+end})
+
+Lucky:AddToggle({
+    Name = "Auto give Lucky Block",
+    Default = false,
+    Callback = function(v)
+        AutoGiveActive = v
+        if AutoGiveActive then
+            while AutoGiveActive do
+                task.wait(0.05) 
+                
+                if SelectedLuckyBlock == "Lucky Block Normal" then
+                    RS.SpawnLuckyBlock:FireServer()
+                elseif SelectedLuckyBlock == "Lucky Block Super" then
+                    RS.SpawnSuperBlock:FireServer()
+                elseif SelectedLuckyBlock == "Lucky Block Diamond" then
+                    RS.SpawnDiamondBlock:FireServer()
+                elseif SelectedLuckyBlock == "Lucky Block Rainbow" then
+                    RS.SpawnRainbowBlock:FireServer()
+                elseif SelectedLuckyBlock == "Lucky Block Galaxy" then
+                    RS.SpawnGalaxyBlock:FireServer()
+                end
+            end
+        end
+    end
+})
+
+Lucky:AddParagraph({"If the lucky block dont give, just reset, or select other type of lucky."})
+
+
+-- MAIN
+Main:AddToggle({
+    Name = "Noclip",
+    Default = false,
+    Callback = function(v)
+        if v == true then
+            if not Noclipping then
+                Noclipping = RunService.Stepped:Connect(NoclipLoop)
+            end
+        else
+            if Noclipping then
+                Noclipping:Disconnect()
+                Noclipping = nil
+                
+                local character = LocalPlayer.Character
+                if character then
+                    for _, child in pairs(character:GetDescendants()) do
+                        if child:IsA("BasePart") then
+                            child.CanCollide = true
+                        end
+                    end
+                end
+            end
+        end
+    end
+})
+Main:AddButton({"Fly Gui V3", function(Value)
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
+end})
+
+Main:AddButton({"Rejoin", function(Value)
+	game:GetService("TeleportService"):Teleport(game.PlaceId, game:GetService("Players").LocalPlayer)
+end})
+
+Main:AddSlider({
+  Name = "Speed",
+  Min = 1,
+  Max = 255,
+  Increase = 1,
+  Default = 16,
+  Callback = function(Value)
+		Humanoid.WalkSpeed = Value
+  end
+})
+
+Main:AddSlider({
+  Name = "JumpPower",
+  Min = 46,
+  Max = 255,
+  Increase = 1,
+  Default = Humanoid.JumpPower,
+  Callback = function(Value)
+		if LocalPlayer.Character:FindFirstChildOfClass('Humanoid').UseJumpPower then
+			LocalPlayer.Character:FindFirstChildOfClass('Humanoid').JumpPower = Value
+		else
+			LocalPlayer.Character:FindFirstChildOfClass('Humanoid').JumpHeight  = Value
+		end
+  end
+})
+
+
+-- INVENTORY
+
+Inventory:AddButton({"Delete all items", function()
+    if not Backpack then
+        print("Erro: Pasta Backpack não encontrada!")
+        return
+    end
+    local Items = Backpack:GetChildren()
+    for _, Item in ipairs(Items) do
+        Item:Destroy()
+    end
+end})
+
+
+-- COMBAT
+
+Combat:AddSection({"Hitbox"})
+
+Combat:AddSlider({
+    Name = "Hitbox Range",
+    Min = 1,
+    Max = 50,
+    Increase = 1,
+    Default = 3,
+    Callback = function(Value)
+        HitboxRange = Value
+        if HitboxActivate then
+            for _, Player in ipairs(Players:GetPlayers()) do
+                if Player ~= LocalPlayer and Player.Character then
+                    ApplyHitbox(Player.Character)
+                end
+            end
+        end
+    end
+})
+
+Combat:AddToggle({
+    Name = "Activate Hitbox",
+    Default = false,
+    Callback = function(v) 
+        HitboxActivate = v 
+
+        if v then
+            PlayerAddedConnection = Players.PlayerAdded:Connect(PlayerSetup)
+            for _, Player in ipairs(Players:GetPlayers()) do
+                PlayerSetup(Player)
+            end
+        else
+            if PlayerAddedConnection then
+                PlayerAddedConnection:Disconnect()
+                PlayerAddedConnection = nil
+            end
+        end
+    end
+})
