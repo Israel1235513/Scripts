@@ -11,6 +11,7 @@ local supportedGames = {
     [3859039810] = "https://raw.githubusercontent.com/Israel1235513/Scripts/refs/heads/main/MunchingSimulator",
     [2537430692] = "https://raw.githubusercontent.com/Israel1235513/Scripts/refs/heads/main/Blocksnprops",
     [482742811] = "https://raw.githubusercontent.com/Israel1235513/Scripts/refs/heads/main/Becrushedbyaspeedingwall",
+    [662417684] = "https://raw.githubusercontent.com/Israel1235513/Scripts/refs/heads/main/Luckyblockbattlegrounds",
 }
 local success, gameInfo = pcall(function() return MarketplaceService:GetProductInfo(placeId) end)
 local gameName = (success and gameInfo and gameInfo.Name) or "Desconhecido"
