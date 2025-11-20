@@ -1,0 +1,309 @@
+
+-- Variáveis 
+local ZenLib = loadstring(game:HttpGet(('https://pastebin.com/raw/kbcW4961')))()
+local Players = game.Players
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character
+local Humanoid = Character.Humanoid
+local RunService = game:GetService("RunService")
+local task = task
+local executor = (identifyexecutor and identifyexecutor()) or (getexecutorname and getexecutorname()) or ""
+print(executor .. " Executor")
+
+local GameInformations = {
+    GameId = game.PlaceId,
+    GameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+}
+
+
+-- Valores
+local SelectedPlayer = nil
+local currentLoop = nil
+local touchConnection = nil
+local Noclipping = nil
+local Clip = true
+local teleporterConnection = nil
+local TeleportPart = nil
+
+-- Funções
+
+local function TeleportToPosition(position)
+	local char = LocalPlayer.Character
+	if char and getRoot(char) then
+		getRoot(char).CFrame = CFrame.new(position)
+	end
+end
+
+function isNumber(str)
+	if tonumber(str) ~= nil or str == 'inf' then
+		return true
+	end
+end
+
+function getRoot(char)
+	local rootPart = char:FindFirstChild('HumanoidRootPart') or char:FindFirstChild('Torso') or char:FindFirstChild('UpperTorso')
+	return rootPart
+end
+
+local function NoclipLoop()
+    local character = LocalPlayer.Character
+    if not character then return end
+    for _, child in pairs(character:GetDescendants()) do
+        if child:IsA("BasePart") and child.CanCollide == true then
+            child.CanCollide = false
+        end
+    end
+end
+
+-- Configurações do UI
+ZenLib:SetScale(600)
+
+-- Window
+local Window = ZenLib:MakeWindow({ Title = GameInformations.GameName, SubTitle = "by zenitsumodz", SaveFolder = "zenitsuhub" })
+
+-- Dialogos
+
+local BemVindo = Window:Dialog({
+	Title = "Zenitsu Hub",
+    Text = GameInformations.GameName .. " \nExecutor: " .. executor .. " Executor",
+	Options = {
+		""
+	}
+})
+
+-- Minimize Button
+Window:AddMinimizeButton({Button = { Image = "rbxassetid://10723345749", BackgroundTransparency = 0, Size = UDim2.new(0, 80, 0, 80), Position = UDim2.new(0, 10, 0, 10) }, Corner = { CornerRadius = UDim.new(0.1, 0) }})
+
+-- Tabs
+local Main = Window:MakeTab({"Main", "sheet"})
+local Towers = Window:MakeTab({"Towers", "shield"})
+-- TOWERS
+Towers:AddToggle({
+    Name = "Remove Kill Brick",
+	Description = "Removes The Kill Brick or void",
+    Default = false,
+    Callback = function(v)
+        local killBrick = workspace:FindFirstChild("Map") and workspace.Map.Classic:FindFirstChild("KillBrick")
+
+        if killBrick and killBrick:IsA("BasePart") then
+            killBrick.CanTouch = not v
+        else
+            warn("KillBrick não encontrado!")
+        end
+    end
+})
+
+Towers:AddToggle({
+    Name = "Anti Void",
+    Description = "Anti void.",
+    Default = false,
+    Callback = function(v)
+        local killBrick = workspace:FindFirstChild("Map") and workspace.Map.Classic:FindFirstChild("KillBrick")
+
+        if not killBrick or not killBrick:IsA("BasePart") then
+            warn("KillBrick não encontrado!")
+            return
+        end
+        
+        if v then
+            if not TeleportPart then
+                TeleportPart = Instance.new("Part")
+                TeleportPart.Name = "AntiVoidTeleportZone"
+                TeleportPart.Size = killBrick.Size
+                TeleportPart.CFrame = killBrick.CFrame * CFrame.new(0, TeleportPart.Size.Y, 0)
+                TeleportPart.Transparency = 1 -- Invisível
+                TeleportPart.CanCollide = false
+                TeleportPart.Anchored = true
+                TeleportPart.CanTouch = true -- PRECISA ser tocável para o evento funcionar
+                TeleportPart.Parent = killBrick.Parent -- Coloca no mesmo local que o KillBrick
+            end
+
+            -- --- 2. Conexão da Lógica de Teletransporte ---
+            if not teleporterConnection then
+                teleporterConnection = TeleportPart.Touched:Connect(function(hit)
+                    -- Checa se quem tocou foi o seu personagem
+                    if hit.Parent == LocalPlayer.Character then
+                        local char = LocalPlayer.Character
+                        local root = getRoot(char)
+                        
+                        if root then
+                            -- Teleporta para o ponto seguro (227.66...)
+                            root.CFrame = CFrame.new(-67.50881958007812, 227.66188049316406, -18.853515625)
+                        end
+                    end
+                end)
+            end
+            
+        else
+            -- --- 3. Desativação e Limpeza ---
+            if teleporterConnection then
+                teleporterConnection:Disconnect()
+                teleporterConnection = nil
+            end
+            
+            if TeleportPart then
+                TeleportPart:Destroy()
+                TeleportPart = nil
+            end
+        end
+    end
+})
+Towers:AddButton({"Teleport to Button", function(Value)
+		local char = LocalPlayer.Character
+		getRoot(char).CFrame = CFrame.new(-65.5, 97.125, -18.5)
+end})
+
+Towers:AddSection({"Select Destroyer"})
+
+local playerNames = {}
+for _, plr in ipairs(Players:GetPlayers()) do
+    table.insert(playerNames, plr.Name)
+end
+
+Towers:AddDropdown({
+    Name = "Next Player to Destroyer",
+    Description = "Select the Player",
+    Options = playerNames,
+    Flag = "dropdown teste",
+    Callback = function(Value)
+        SelectedPlayer = Players:FindFirstChild(Value)
+        if not SelectedPlayer then
+            warn("Player " .. Value .. " não encontrado!")
+        end
+    end
+})
+
+Towers:AddToggle({
+    Name = "Activate This",
+    Default = false,
+    Callback = function(v)
+        if currentLoop then
+            task.cancel(currentLoop)
+            currentLoop = nil
+        end
+        if v then
+            if not SelectedPlayer then
+                warn("Nenhum jogador selecionado no Dropdown!")
+                Towers:SetToggle("Activate This", false)
+                return
+            end
+
+            currentLoop = task.spawn(function()
+                while true do
+                    if not SelectedPlayer.Team or not SelectedPlayer.Parent then
+                        task.wait(1)
+                        continue
+                    end
+                    local teamName = SelectedPlayer.Team.Name
+                    
+                    if teamName == "Towers" then
+                        local char = LocalPlayer.Character
+                        local root = getRoot(char)
+                        if root then
+                            root.CFrame = CFrame.new(136.5, 252.5, -18.5) 
+                        end
+                        break
+                        
+                    elseif teamName == "Destroyer" then
+                        break
+                        
+                    elseif teamName == "Spectating" then
+                        task.wait(10)
+                        
+                    else
+                        task.wait(1)
+                    end
+                end
+            end)
+        end
+    end
+})
+
+Towers:AddSection({"Teleports"})
+
+Towers:AddButton({"Teleport to Button", function(Value)
+		local char = LocalPlayer.Character
+		getRoot(char).CFrame = CFrame.new(-65.5, 97.125, -18.5)
+end})
+
+Towers:AddButton({"Teleport to Spectating", function(Value)
+		LocalPlayer.Team = "Spectating"
+		LocalPlayer.TeamColor = Color3.new(255, 255, 255)
+		local char = LocalPlayer.Character
+		getRoot(char).CFrame = CFrame.new(136.5, 252.5, -18.5)
+end})
+
+Towers:AddButton({"Teleport to Jenga", function(Value)
+		local char = LocalPlayer.Character
+		LocalPlayer.Team = "Towers"
+		LocalPlayer.TeamColor = Color3.new(0, 0, 255)
+		getRoot(char).CFrame = CFrame.new(-67.50881958007812, 220.66188049316406, -18.853515625)
+end})
+
+Towers:AddButton({"Teleport to Destroyer", function(Value)
+		local char = LocalPlayer.Character
+		LocalPlayer.Team = "Destroyer"
+		LocalPlayer.TeamColor = Color3.new(255, 0, 0)
+		getRoot(char).CFrame = CFrame.new(269.5, 101.51943969726562, -18.5)
+end})
+
+
+-- MAIN
+Main:AddToggle({
+    Name = "Noclip",
+    Default = false,
+    Callback = function(v)
+        if v == true then
+            if not Noclipping then
+                Noclipping = RunService.Stepped:Connect(NoclipLoop)
+            end
+        else
+            if Noclipping then
+                Noclipping:Disconnect()
+                Noclipping = nil
+                
+                local character = LocalPlayer.Character
+                if character then
+                    for _, child in pairs(character:GetDescendants()) do
+                        if child:IsA("BasePart") then
+                            child.CanCollide = true
+                        end
+                    end
+                end
+            end
+        end
+    end
+})
+Main:AddButton({"Fly Gui V3", function(Value)
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
+end})
+
+Main:AddButton({"Rejoin", function(Value)
+	game:GetService("TeleportService"):Teleport(game.PlaceId, game:GetService("Players").LocalPlayer)
+end})
+
+Main:AddSlider({
+  Name = "Speed",
+  Min = 1,
+  Max = 255,
+  Increase = 1,
+  Default = 16,
+  Callback = function(Value)
+		Humanoid.WalkSpeed = Value
+  end
+})
+
+Main:AddSlider({
+  Name = "JumpPower",
+  Min = 46,
+  Max = 255,
+  Increase = 1,
+  Default = Humanoid.JumpPower,
+  Callback = function(Value)
+		if LocalPlayer.Character:FindFirstChildOfClass('Humanoid').UseJumpPower then
+			LocalPlayer.Character:FindFirstChildOfClass('Humanoid').JumpPower = Value
+		else
+			LocalPlayer.Character:FindFirstChildOfClass('Humanoid').JumpHeight  = Value
+		end
+  end
+})
