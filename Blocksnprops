@@ -106,16 +106,18 @@ Towers:AddToggle({
         end
         
         if v then
-            if not TeleportPart then
+if not TeleportPart then
                 TeleportPart = Instance.new("Part")
                 TeleportPart.Name = "AntiVoidTeleportZone"
                 TeleportPart.Size = killBrick.Size
-                TeleportPart.CFrame = killBrick.CFrame * CFrame.new(0, TeleportPart.Size.Y, 0)
-                TeleportPart.Transparency = 1 -- Invisível
+                TeleportPart.CFrame = killBrick.CFrame * CFrame.new(0, killBrick.Size.Y + 5, 0)
+                
+                -- Configurações
+                TeleportPart.Transparency = 1 
                 TeleportPart.CanCollide = false
                 TeleportPart.Anchored = true
-                TeleportPart.CanTouch = true -- PRECISA ser tocável para o evento funcionar
-                TeleportPart.Parent = killBrick.Parent -- Coloca no mesmo local que o KillBrick
+                TeleportPart.CanTouch = true
+                TeleportPart.Parent = killBrick.Parent
             end
 
             -- --- 2. Conexão da Lógica de Teletransporte ---
